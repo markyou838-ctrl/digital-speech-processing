@@ -83,5 +83,25 @@ bg.addEventListener('change',draw);draw();
     across short audio windows in the same four examples. I used a
     score threshold of 0.30 and grouped consecutive positive windows
     into approximate event intervals. The explorer shows each interval's
-</script></html>
+    start time, end time, and highest model score.
+  </p>
+  <p>
+    In the recording with a music background, YAMNet detected three
+    music intervals at approximately 1.44–2.40 s, 8.16–9.60 s, and
+    11.04–12.00 s. Speech and music can overlap because each event class
+    is detected separately. The background menu selects a different
+    recording and updates the VAD summary, event timeline, and table.
+    Television and babble are recording conditions in this demonstration.
+    The timeline displays the Speech and Music event classes.
+  </p>
 
+  <h3>5. Conclusion</h3>
+  <p>
+    The three classifiers performed equally on the held-out YESNO
+    recordings. On the selected VOiCES examples, Silero estimated when
+    speech was active, while YAMNet showed when it detected speech and
+    music. The interactive page lets readers compare these outputs
+    across four background conditions.
+  </p>
+</section>
+</html>
