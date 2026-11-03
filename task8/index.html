@@ -20,4 +20,88 @@ function draw(){
  document.querySelector('#rows').innerHTML=events.map(r=>'<tr><td>'+r.Event+'</td><td>'+Number(r.Start_s).toFixed(2)+'</td><td>'+Number(r.End_s).toFixed(2)+'</td><td>'+Number(r.Peak_score).toFixed(3)+'</td></tr>').join('');
 }
 bg.addEventListener('change',draw);draw();
+ <section aria-labelledby="report-title"
+         style="background:#fff; border-radius:16px; padding:28px; margin-top:24px;">
+  <h2 id="report-title">Task 8 Experiment Report</h2>
+  <p>Digital Speech Processing · Muntadher Sadoon Kadhim</p>
+
+  <h3>1. Objective</h3>
+  <p>
+    This assignment has two parts. The first is to train and compare
+    classifiers that distinguish YES from NO in the torchaudio YESNO
+    dataset. The second is to use the VOiCES subset to find when speech
+    is active and when sound events such as speech and music occur.
+  </p>
+
+  <h3>2. YESNO Word Classification</h3>
+  <p>
+    I started with 60 recordings. Each recording has eight word labels
+    in its filename. I segmented the recordings into individual words,
+    checked the segments, and excluded one recording after identifying
+    only seven spoken words. This left 59 recordings with 472 word
+    samples, including 223 NO and 249 YES samples.
+  </p>
+  <p>
+    For each word, I extracted 13 Mel-frequency cepstral coefficients
+    (MFCCs) across short audio frames. I calculated the mean and
+    standard deviation of each coefficient over time, giving 26 features
+    per word. I split the data by recording so that words from the same
+    recording stayed together. The training set contained 376 words
+    from 47 recordings, and the test set contained 96 words from
+    12 separate recordings.
+  </p>
+  <p>
+    I trained K-Nearest Neighbors (KNN), Support Vector Machine (SVM),
+    and Random Forest. Each model correctly classified all 96 test words
+    (43 NO and 53 YES), with 100% accuracy and 100% macro F1. The
+    confusion matrices showed zero errors for both classes. This result
+    describes one test split from a single speaker. Testing on other
+    speakers would show how well the models generalize.
+  </p>
+
+  <h3>3. Voice Activity Detection on VOiCES</h3>
+  <p>
+    Voice Activity Detection (VAD) finds the time intervals that contain
+    speech. I inspected 908 WAV files in the VOiCES subset, all sampled
+    at 16 kHz. For the demonstration, I selected one recording from
+    each background condition: no added distractor, music, television,
+    and background babble.
+  </p>
+  <p>
+    I used the pretrained Silero VAD model to predict speech intervals
+    in the four examples. The waveform plots highlight those intervals,
+    and the summary reports their count and total duration. In the
+    music example, Silero found six speech regions covering 13.48 of
+    the recording's 16.16 seconds. This is the duration predicted as
+    speech. Measuring VAD accuracy would require reference speech
+    timestamps for comparison.
+  </p>
+
+  <h3>4. Audio Event Detection on VOiCES</h3>
+  <p>
+    I used the pretrained YAMNet model to track speech and music scores
+    across short audio windows in the same four examples. I used a
+    score threshold of 0.30 and grouped consecutive positive windows
+    into approximate event intervals. The explorer shows each interval's
+    start time, end time, and highest model score.
+  </p>
+  <p>
+    In the recording with a music background, YAMNet detected three
+    music intervals at approximately 1.44–2.40 s, 8.16–9.60 s, and
+    11.04–12.00 s. Speech and music can overlap because each event class
+    is detected separately. The background menu selects a different
+    recording and updates the VAD summary, event timeline, and table.
+    Television and babble are recording conditions in this demonstration.
+    The timeline displays the Speech and Music event classes.
+  </p>
+
+  <h3>5. Conclusion</h3>
+  <p>
+    The three classifiers performed equally on the held-out YESNO
+    recordings. On the selected VOiCES examples, Silero estimated when
+    speech was active, while YAMNet showed when it detected speech and
+    music. The interactive page lets readers compare these outputs
+    across four background conditions.
+  </p>
+</section>
 </script></html>
