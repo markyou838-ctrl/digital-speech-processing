@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Task 8 results</title>
+<style>body{font:16px system-ui;background:#f0f4f8;color:#182a3e;margin:0}main{max-width:850px;margin:auto;padding:32px}section{background:white;padding:24px;border-radius:14px;margin:20px 0}select{font:inherit;padding:7px}svg{width:100%;height:auto}table{border-collapse:collapse;width:100%}td,th{padding:8px;text-align:left;border-bottom:1px solid #ddd}a{color:#145da0}</style>
+<main><h1>Task 8 · Audio experiments</h1><section><h2>YESNO</h2><p>KNN, SVM and Random Forest each classified 96 of 96 test words correctly, across 12 recordings from one speaker.</p><a href="Audio_Assignment.ipynb">Notebook</a> · <a href="results/YESNO_Classifier_Results.csv">Classifier results</a></section>
+<section><h2>VOiCES explorer</h2><label for="bg">Background </label><select id="bg"><option value="none">No added distractor</option><option value="musi">Music</option><option value="tele">Television</option><option value="babb">Speech babble</option></select>
+<p id="vad"></p><p>YAMNet predictions at threshold 0.30</p><svg id="timeline" viewBox="0 0 720 120" role="img" aria-label="Predicted speech and music intervals"></svg>
+<table><thead><tr><th>Event</th><th>Start (s)</th><th>End (s)</th><th>Peak score</th></tr></thead><tbody id="rows"></tbody></table></section></main>
+<script>
+const data={"VOICES_Event_Intervals": [{"Background": "none", "Event": "Speech", "Start_s": "0.0", "End_s": "16.065", "Peak_score": "0.9992228150367737"}, {"Background": "musi", "Event": "Speech", "Start_s": "0.0", "End_s": "1.44", "Peak_score": "0.79142165184021"}, {"Background": "musi", "Event": "Speech", "Start_s": "2.4", "End_s": "8.64", "Peak_score": "0.998529851436615"}, {"Background": "musi", "Event": "Speech", "Start_s": "9.6", "End_s": "16.1600625", "Peak_score": "0.9964491724967957"}, {"Background": "musi", "Event": "Music", "Start_s": "1.44", "End_s": "2.4", "Peak_score": "0.3935334384441376"}, {"Background": "musi", "Event": "Music", "Start_s": "8.16", "End_s": "9.600000000000001", "Peak_score": "0.49779343605041504"}, {"Background": "musi", "Event": "Music", "Start_s": "11.04", "End_s": "12.0", "Peak_score": "0.34768033027648926"}, {"Background": "tele", "Event": "Speech", "Start_s": "0.0", "End_s": "15.84", "Peak_score": "0.9998643398284912"}, {"Background": "babb", "Event": "Speech", "Start_s": "0.0", "End_s": "15.84", "Peak_score": "0.9996554255485535"}], "VOICES_VAD_Summary": [{"Background": "none", "Duration_s": "16.065", "Speech_regions": "4", "Detected_speech_s": "14.032", "Detected_speech_%": "87.34516028633675"}, {"Background": "musi", "Duration_s": "16.1600625", "Speech_regions": "6", "Detected_speech_s": "13.48", "Detected_speech_%": "83.41551896844459"}, {"Background": "tele", "Duration_s": "15.84", "Speech_regions": "5", "Detected_speech_s": "14.67", "Detected_speech_%": "92.61363636363636"}, {"Background": "babb", "Duration_s": "15.84", "Speech_regions": "5", "Detected_speech_s": "14.798", "Detected_speech_%": "93.42171717171718"}]};
+const bg=document.querySelector('#bg');
+function draw(){
+ const v=data.VOICES_VAD_Summary.find(r=>r.Background===bg.value);
+ const events=data.VOICES_Event_Intervals.filter(r=>r.Background===bg.value);
+ const duration=Number(v.Duration_s), x=t=>100+600*t/duration;
+ document.querySelector('#vad').textContent='Silero VAD: '+v.Speech_regions+' speech regions · '+Number(v.Detected_speech_s).toFixed(2)+' of '+duration.toFixed(2)+' seconds';
+ let chart='<text x="0" y="30">Speech</text><text x="0" y="65">Music</text>';
+ for(const y of [12,47]) chart+='<rect x="100" y="'+y+'" width="600" height="24" rx="4" fill="#e7edf4"/>';
+ for(const r of events) chart+='<rect x="'+x(+r.Start_s)+'" y="'+(r.Event==='Speech'?12:47)+'" width="'+(x(+r.End_s)-x(+r.Start_s))+'" height="24" rx="4" fill="'+(r.Event==='Speech'?'#2563a9':'#b85b13')+'"><title>'+r.Event+' '+(+r.Start_s).toFixed(2)+'–'+(+r.End_s).toFixed(2)+' s</title></rect>';
+ for(let t=0;t<=duration;t+=4) chart+='<text x="'+x(t)+'" y="100" font-size="14">'+t+' s</text>';
+ document.querySelector('#timeline').innerHTML=chart;
+ document.querySelector('#rows').innerHTML=events.map(r=>'<tr><td>'+r.Event+'</td><td>'+Number(r.Start_s).toFixed(2)+'</td><td>'+Number(r.End_s).toFixed(2)+'</td><td>'+Number(r.Peak_score).toFixed(3)+'</td></tr>').join('');
+}
+bg.addEventListener('change',draw);draw();
+</script></html>
