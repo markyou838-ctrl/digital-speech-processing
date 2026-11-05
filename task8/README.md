@@ -1,4 +1,4 @@
-# Task 8: Yes/No Audio Classification
+# Task 8: Yes/No Audio Classification and Audio Event Detection on VOiCES
 
 **Student** — Muntadher Sadoon Kadhim  
 **Student ID** — 404131088  
