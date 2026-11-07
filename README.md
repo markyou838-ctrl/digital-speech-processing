@@ -88,26 +88,31 @@ The CNN is the best model on both metrics. Its sequence accuracy of 0.789 is alm
 
 ## Waveforms and Spectrograms
 
-Each figure below shows one recording. The top panel is the waveform, which plots amplitude against time. The bottom panel is the spectrogram, which shows how the frequency content changes over time. The title of each figure lists the eight word labels in temporal order, so the figures can be compared directly with the labels.
+Each figure below shows one recording. The top panel is the waveform, which plots amplitude over time. The bottom panel is the spectrogram, which shows how the frequency content changes over time. The title of each figure lists the eight word labels in temporal order. Click any figure to open it at full size.
 
 ### Sample 0
 
-![Sample 0: waveform and spectrogram](sample_0.png)
+<a href="sample_0.png"><img src="sample_0.png" width="750" alt="Sample 0 waveform and spectrogram"></a>
+
+In the waveform, each spoken word appears as a separate burst of amplitude, and the silent gaps between words appear as low-amplitude regions. In the spectrogram, each word appears as a region of energy at its own time position. This is why the temporal order matters for classification.
 
 ### Sample 1
 
-![Sample 1: waveform and spectrogram](sample_1.png)
+<a href="sample_1.png"><img src="sample_1.png" width="750" alt="Sample 1 waveform and spectrogram"></a>
+
+This recording has the same structure of eight words, but the word pattern and the timing differ from Sample 0. The classifier must recognize each word and its position.
 
 ### Sample 2
 
-![Sample 2: waveform and spectrogram](sample_2.png)
+<a href="sample_2.png"><img src="sample_2.png" width="750" alt="Sample 2 waveform and spectrogram"></a>
+
+The timing of the words varies between recordings, so the model cannot rely on fixed positions and must learn the patterns from the sequence.
 
 ### Sample 3
 
-![Sample 3: waveform and spectrogram](sample_3.png)
+<a href="sample_3.png"><img src="sample_3.png" width="750" alt="Sample 3 waveform and spectrogram"></a>
 
-In the waveform, each spoken word appears as a burst of amplitude, and the silent gaps between words appear as low-amplitude regions. The spectrogram shows the same words as regions of energy at their own time positions. This structure is why the temporal order matters: the classifier has to know not only which words are present, but where each one occurs.
-
+Compared with the earlier samples, the energy of each word is spread over its own frequency range and time span. These differences are what the MFCC features capture.
 ## Discussion
 
 **The CNN performs best because it preserves temporal order.** Its convolutional filters slide along the time axis, so they detect word patterns in place and keep the order of the frames. Its sequence accuracy of 0.789 shows that it recovers most complete sequences.
