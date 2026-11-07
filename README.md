@@ -18,6 +18,21 @@ Two metrics are reported:
 - **Sequence accuracy:** the fraction of recordings where all eight words are predicted correctly. A random guess gives about 1/256, or 0.004.
 
 Sequence accuracy is the stricter metric and better reflects the task, because a single wrong word makes the whole recording wrong.
+## Label Encoding
+
+Each word is encoded as a binary value:
+
+| Word | Label |
+|---|---|
+| no | 0 |
+| yes | 1 |
+
+The eight labels of a recording are stored in temporal order, so the label vector gives both the words and their positions. For example, Sample 0 is encoded as:
+
+| Position | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| Label | 0 | 0 | 0 | 0 | 1 | 1 | 1 | 1 |
+| Word | no | no | no | no | yes | yes | yes | yes |
 
 ## Dataset
 
