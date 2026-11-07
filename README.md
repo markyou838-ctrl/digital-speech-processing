@@ -1,5 +1,6 @@
 # YesNo Speech Classification with torchaudio
-
+# Muntadher Sadoon Kadhim
+# Student ID :404131088
 This project compares classical machine learning models and a 1D CNN on the YesNo dataset from `torchaudio`. The goal is to recognize the sequence of eight spoken words, where each word is either "yes" or "no".
 
 ## Table of Contents
