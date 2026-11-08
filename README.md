@@ -1,4 +1,4 @@
-# YesNo Speech Classification with torchaudio
+# YesNo Speech Classification with torchaudio and Speech Analysis on the VOiCES Subset
 ## Muntadher Sadoon Kadhim
 ## stuent ID :404131088
 
