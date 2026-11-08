@@ -124,20 +124,136 @@ In the waveform, each spoken word appears as a burst of amplitude, and the silen
 - **Limited hyperparameter tuning:** the settings for each model were chosen by hand, not by a systematic search.
 - **Seed coverage:** the CNN's initialization seed is fixed at 0 inside the training function, so its reported standard deviation reflects only the fold split and underestimates the true variability.
 
-## How to Run
 
-1. Open the notebook in Google Colab.
-2. Run the cells in order from top to bottom. A CPU runtime is enough. The CNN training takes several minutes on CPU.
-3. The dataset is downloaded automatically to `./data`.
 
-To run the notebook locally, install the dependencies:
+- # 2- Speech Analysis on the VOiCES Subset
 
-```bash
-pip install torch torchaudio scikit-learn matplotlib python-docx
-```
+Acoustic event classification and voice activity detection (VAD) on the VOiCES subset.
+
+📄 **Full report (Word):** [VOiCES_Event_and_VAD_Report.docx](VOiCES_Event_and_VAD_Report.docx)
+
+---
+
+## 1. Introduction
+
+This project applies two speech processing tasks to the VOiCES subset. VOiCES (Voices Obscured in Complex Environmental Settings) contains speech recorded in real reverberant rooms. The foreground speaker is replayed LibriSpeech, and the distractor noise is taken from MUSAN. This subset contains recordings where the main speaker is located at 90 degrees.
+
+The two tasks are:
+
+- **Task A: Acoustic event classification.** Identify the background noise type of each recording.
+- **Task B: Voice activity detection (VAD).** Label each time frame as speech or non-speech.
+
+## 2. Data
+
+The reference file lists 1,500 recordings with their transcripts. The archives distributed in the repository (`VOiCES_90_1.tar` to `VOiCES_90_8.tar`) contain 908 of these recordings, so all experiments use those 908 files. The 592 missing recordings are not present in the archives, and the reason is not known.
+
+Every recording is mono, sampled at 16 kHz, and lasts about 16 seconds.
+
+| Property | Value |
+|---|---|
+| Recordings used | 908 of 1,500 |
+| Noise types | babble 228, music 231, none 227, TV 222 |
+| Rooms | rm1: 446, rm2: 462 |
+| Speakers | 104 |
+| Chapters (groups for validation) | 122 |
+| Sample rate / channels | 16,000 Hz / mono |
+
+Each filename encodes the room, noise type, speaker, and chapter. The noise labels for Task A are taken from the filename. Macintosh metadata files (prefixed with `._`) were removed.
+
+## 3. Task A: Acoustic Event Classification
+
+The subset has no time-stamped event annotations. Event detection is therefore formulated as **clip-level classification** of the background noise type into four classes: babble, music, none, and TV. This is a simplification of frame-level event detection.
+
+### 3.1 Features
+
+Each recording is converted to 20 MFCC coefficients (`n_fft = 512`, hop length = 160 samples, 40 mel bands). The clip-level feature vector is the mean and standard deviation of each coefficient over time, giving **40 features per recording**.
+
+### 3.2 Models and Evaluation
+
+| Model | Configuration |
+|---|---|
+| Logistic Regression | Standardized inputs, `max_iter = 3000` |
+| SVM | RBF kernel, C = 1, standardized inputs |
+| Random Forest | 300 trees, `random_state = 0` |
+| MLP (PyTorch) | 40-64-4, ReLU, dropout 0.2, Adam (lr = 1e-3), cross-entropy, 200 full-batch epochs |
+
+Evaluation uses **5-fold GroupKFold with the chapter as the group**, so no chapter (and therefore no sentence) appears in both training and test data. Accuracy and macro-averaged F1 are reported as mean ± standard deviation across folds.
+
+### 3.3 Results
+
+| Classifier | Accuracy | Macro-F1 |
+|---|---|---|
+| **SVM (RBF)** | **0.754 ± 0.027** | **0.749 ± 0.030** |
+| MLP (PyTorch) | 0.730 ± 0.013 | 0.725 ± 0.010 |
+| Random Forest | 0.703 ± 0.024 | 0.691 ± 0.029 |
+| Logistic Regression | 0.657 ± 0.024 | 0.652 ± 0.023 |
+
+All classifiers perform well above chance (0.25 for four balanced classes). SVM achieves the highest accuracy. The MLP is close to SVM, which is expected given the small dataset of 908 recordings.
+
+### 3.4 Confusion Analysis
+
+The figure below shows the SVM confusion matrix, pooled over all out-of-fold predictions. Per-class recall: **babble 0.860, music 0.818, none 0.771, TV 0.563**.
+
+<p align="center">
+  <img src="event_confusion.png" width="450" alt="SVM confusion matrix for noise type classification">
+</p>
+
+*Figure 1. Event classification (noise type): SVM confusion matrix, pooled over out-of-fold predictions.*
+
+The most frequent confusion is between **TV and none** (43 and 27 recordings), followed by **TV and babble** (27 and 23). TV is the hardest class. A plausible explanation is that recordings labeled `none` still contain room noise and HVAC hum, which resemble low-level TV audio. The matrix alone does not verify this. Because the features are clip-level statistics, they discard temporal detail, which may limit the separation of quiet noise types.
+
+## 4. Task B: Voice Activity Detection
+
+### 4.1 Reference Labels
+
+The subset has no manual speech annotations. Frame labels were generated by **forced alignment**: the transcript was normalized (uppercase, punctuation removed) and aligned to the audio using the CTC acoustic model `WAV2VEC2_ASR_BASE_960H` from torchaudio. Each word spans from its first to its last aligned character, and the frames inside these spans are labeled as speech. A margin of two frames (**40 ms**) is added on both sides of each word. Frames are 20 ms long.
+
+Across the 908 recordings there are **705,867 frames**, of which **66.6% are labeled speech**.
+
+The margin was chosen by inspecting the resulting speech ratio, not by optimizing a criterion. A 100 ms margin merged almost all pauses (92% speech on the example recording) and was rejected. A 40 ms margin gives about 76% speech on the same recording, which was judged closer to the speech actually present.
+
+### 4.2 Methods
+
+- **Baseline (energy-based VAD):** the energy of each frame is computed in decibels. A frame is labeled speech when its energy exceeds the 10th-percentile noise floor of the recording by 10 dB. The threshold is fixed and was not tuned against the labels.
+- **Learned VAD:** Logistic Regression on MFCC features (20 coefficients, `n_fft = 512`, hop length = 320 samples, interpolated to the 20 ms label rate). Each frame is represented by its own features and those of two frames before and after it, giving 100 features. Features are standardized on the training folds, and at most 100,000 frames are sampled per fold for training.
+
+Both methods are evaluated on the same 5-fold GroupKFold split by chapter, so the comparison is fair.
+
+### 4.3 Results
+
+| Method | Frame Accuracy | Precision | Recall | F1 |
+|---|---|---|---|---|
+| **Logistic Regression** (MFCC, ±2 frames) | **0.829 ± 0.002** | 0.836 ± 0.017 | **0.925 ± 0.020** | **0.878** |
+| Energy baseline | 0.753 ± 0.010 | 0.851 ± 0.011 | 0.762 ± 0.020 | 0.804 ± 0.008 |
+
+Logistic Regression outperforms the energy baseline in accuracy and F1. The main difference is **recall**: the energy method misses quieter speech, which is expected when babble, music, or TV raises the noise floor. The energy baseline has slightly higher precision, meaning fewer false speech detections, but at the cost of many missed speech frames.
+
+The figure below shows one example recording per noise type. The orange regions are the VAD reference, and the spectrogram is on the right.
+
+<p align="center">
+  <img src="vad_examples.png" width="850" alt="VAD reference and spectrograms for four noise types">
+</p>
+
+*Figure 2. Examples of recordings (one per noise type). Orange regions show the VAD reference; the spectrogram is shown on the right.*
+
+## 5. Limitations
+
+- **Partial data:** 908 of the 1,500 recordings in the reference file are available in the archives.
+- **Silver labels:** the VAD reference comes from forced alignment, not human annotation. The VAD results measure agreement with the alignment-based reference, not absolute speech detection accuracy.
+- **Simplified event detection:** Task A classifies clip-level noise type, not time-localized events, because the subset has no event timestamps.
+- **Scope:** a small dataset and a single microphone position (90 degrees), which limits generalization.
+- **Tuning:** hyperparameters were not tuned systematically, and the 40 ms margin was chosen by inspection.
+
+## 6. Conclusion
+
+On the VOiCES subset, noise type can be recognized from clip-level MFCC statistics, with SVM reaching 0.754 accuracy. For voice activity detection, a Logistic Regression model using short-context MFCC features outperforms an energy-based baseline (F1 0.878 against 0.804), mainly by detecting more speech.
+
+Both conclusions depend on the alignment-based labels and the 908 available recordings. Future work should collect manual speech annotations, add time-stamped event labels, and tune the models on a separate validation split.
 
 ## Files
 
-- `Untitled80 (1).ipynb`: the notebook with the full code, from data loading to results. Rename it to a clearer name such as `YesNo_Classifiers.ipynb` if you prefer.
-- `YesNo_Classifiers_Report.docx`: the full written report, including the tables and figures.
-- `sample_0.png`, `sample_1.png`, `sample_2.png`, `sample_3.png`: the waveform and spectrogram figures shown above.
+- `VOiCES_Event_and_VAD_Report.docx`: the full report with tables and figures
+- `event_confusion.png`: Figure 1, SVM confusion matrix
+- `vad_examples.png`: Figure 2, VAD examples
+
+
